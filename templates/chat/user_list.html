@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Users · Live Chat{% endblock %}
+
+{% block content %}
+<h1 class="fw-bold mb-3">My Profile · {{ request.user.username|title }}</h1>
+
+<div class="card card-soft p-0 overflow-hidden">
+  <div class="p-4 border-bottom bg-white">
+    <div class="d-flex align-items-center gap-3">
+      <div class="avatar">{{ request.user.username|first|upper }}</div>
+      <div>
+        <div class="fw-semibold">{{ request.user.username|title }}</div>
+        <div class="text-secondary small">Browse users and start a conversation</div>
+      </div>
+      <div class="ms-auto">
+        <a href="{% url 'logout' %}" class="btn btn-outline-secondary btn-sm">Logout</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="p-4 bg-light">
+    <div class="row g-3">
+      <div class="col-12">
+        <input id="userSearch" class="form-control" placeholder="Search users..." oninput="filterUsers(this.value)">
+      </div>
+
+      <div class="col-12">
+        <ul id="userList" class="list-group list-group-flush">
+          {% for user in users %}
+          <li class="list-group-item d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar">{{ user.username|first|upper }}</div>
+              <div>
+                <div class="fw-semibold">{{ user.username|title }}</div>
+                <div class="text-secondary small">Member</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="{% url 'chat-room-start' user.id %}" class="btn btn-brand btn-sm">Chat</a>
+            </div>
+          </li>
+          {% empty %}
+          <li class="list-group-item text-center text-secondary">No users found.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  function filterUsers(q){
+    q = (q||"").toLowerCase();
+    const items = document.querySelectorAll("#userList .list-group-item");
+    items.forEach(li=>{
+      const name = li.querySelector(".fw-semibold")?.textContent.toLowerCase() || "";
+      li.style.display = name.includes(q) ? "" : "none";
+    });
+  }
+</script>
+{% endblock %}

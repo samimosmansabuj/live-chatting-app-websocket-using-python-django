@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{% block title %}Live Chat{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --brand:#4f46e5; }
+    body{ font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#f3f4f6; }
+    .navbar-brand{ font-weight:700; letter-spacing:.2px; }
+    .btn-brand{ background:var(--brand); color:#fff; }
+    .btn-brand:hover{ background:#4338ca; color:#fff; }
+    .card-soft{ border:0; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    .hero{ background: radial-gradient(1200px 400px at 10% -10%, rgba(79,70,229,.18), transparent), 
+                     radial-gradient(900px 300px at 90% 0%, rgba(14,165,233,.15), transparent),
+                     #fff; border-radius:24px; }
+    .avatar{ width:36px; height:36px; border-radius:999px; background:#e5e7eb; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg bg-white border-bottom">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'home_page' %}">💬 LiveChat</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="topnav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'home_page' %}active{% endif %}" href="{% url 'home_page' %}">Home</a></li>
+          {% if request.user.is_authenticated %}
+          <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'user-list' %}active{% endif %}" href="{% url 'user-list' %}">Users</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="d-flex gap-2">
+          {% if request.user.is_authenticated %}
+            <span class="d-none d-md-inline text-secondary">Hi, <strong>{{ request.user.username|title }}</strong></span>
+            <a href="{% url 'logout' %}" class="btn btn-outline-secondary">Logout</a>
+          {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary">Login</a>
+            <a href="{% url 'register' %}" class="btn btn-brand">Create account</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    {% if messages %}
+      <div class="mb-3">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer_content %}
+  <footer class="py-5 border-top bg-white">
+    <div class="container d-flex flex-wrap justify-content-between align-items-center">
+      <p class="mb-0 text-muted">© {{ now|date:"Y" }} LiveChat</p>
+      <a href="#" class="text-muted small">Privacy · Terms</a>
+    </div>
+  </footer>
+  {% endblock %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

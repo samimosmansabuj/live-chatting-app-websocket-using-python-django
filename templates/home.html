@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Welcome · Live Chat{% endblock %}
+
+{% block content %}
+  <section class="hero p-5 mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <h1 class="display-5 fw-bold mb-3">Welcome to <span style="color:var(--brand)">LiveChat</span></h1>
+        <p class="lead text-secondary mb-4">
+          Start real-time conversations, share files, send voice notes, and create custom offers — all in one sleek chat.
+        </p>
+        <div class="d-flex gap-2">
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'user-list' %}" class="btn btn-brand btn-lg">Find users to chat</a>
+            <a href="{% url 'logout' %}" class="btn btn-outline-secondary btn-lg">Logout</a>
+          {% else %}
+            <a href="{% url 'register' %}" class="btn btn-brand btn-lg">Create your account</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg">Login</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-5 mt-4 mt-lg-0">
+        <div class="card card-soft p-4">
+          <h5 class="fw-semibold mb-3">Why LiveChat?</h5>
+          <ul class="list-unstyled mb-0">
+            <li class="mb-2">✅ Real-time WebSocket chat</li>
+            <li class="mb-2">📎 Image, video, audio & file sharing</li>
+            <li class="mb-2">🎤 Built-in voice recording</li>
+            <li class="mb-2">💼 Custom offers & actions</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if request.user.is_authenticated %}
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card card-soft p-4 h-100">
+        <h5 class="mb-2">Jump back in</h5>
+        <p class="text-secondary mb-3">Go to your users list and start or resume a conversation.</p>
+        <a class="btn btn-outline-secondary" href="{% url 'user-list' %}">Open Users</a>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card card-soft p-4 h-100">
+        <h5 class="mb-2">Your profile</h5>
+        <p class="text-secondary mb-3">Logged in as <strong>{{ request.user.username }}</strong>.</p>
+        <a class="btn btn-outline-secondary" href="{% url 'logout' %}">Logout</a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

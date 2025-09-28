@@ -1,0 +1,877 @@
+{% extends "base.html" %}
+{% block title %}Chat · {{ room.uuid }}{% endblock %}
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+<style>
+    /* Modal styling */
+    #offer-modal {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 50%;
+        margin: 0 auto;
+        position: absolute;
+        /* Position relative to the parent container */
+        bottom: 200px;
+        left: 50%;
+        transform: translateX(-50%);
+        /* Center the modal horizontally */
+        z-index: 1000;
+        /* Ensure it is above other content */
+        display: none;
+        /* Initially hidden */
+    }
+
+
+    #offer-modal input,
+    #offer-modal textarea {
+        margin-bottom: 10px;
+    }
+
+    #offer-modal button {
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    #voice-record-btn.recording {
+        background-color: #dc3545;
+        /* red while recording */
+        color: #fff;
+    }
+
+    .chat-file-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .chat-file-preview-item {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        overflow: hidden;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #555;
+    }
+
+    .chat-file-preview-item img,
+    .chat-file-preview-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .chat-file-preview-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        line-height: 16px;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+
+    /* Images */
+    .chat-image {
+        max-width: 240px;
+        /* limit width */
+        max-height: 240px;
+        /* prevent very tall images */
+        border-radius: 8px;
+        /* rounded corners */
+        object-fit: cover;
+        /* crop instead of stretch */
+        display: block;
+        margin-top: 4px;
+    }
+
+    /* Videos */
+    .chat-video {
+        max-width: 300px;
+        max-height: 200px;
+        border-radius: 8px;
+        display: block;
+        margin-top: 4px;
+        background: #000;
+        /* nice background while loading */
+    }
+
+    /* Audio */
+    .chat-audio {
+        width: 250px;
+        /* fixed width */
+        margin-top: 4px;
+    }
+
+    /* Generic file links */
+    .chat-file {
+        display: inline-block;
+        max-width: 260px;
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #f8f9fa;
+        color: #333;
+        text-decoration: none;
+        word-break: break-word;
+        margin-top: 4px;
+    }
+
+    .chat-file:hover {
+        background: #e9ecef;
+    }
+
+
+    /* Chat Room Layout */
+    .chat-room {
+        max-width: 700px;
+        margin: auto;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .chat-room-title {
+        margin-bottom: 15px;
+        font-weight: 600;
+        color: #444;
+    }
+
+    /* Chat Container */
+    .chat-log-container {
+        background: #f9f9f9;
+        border-radius: 10px;
+        height: 480px;
+        padding: 15px;
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-username {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 8px;
+    }
+
+    /* Message Bubbles */
+    .chat-message {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding: 8px;
+        border-radius: 12px;
+        max-width: 75%;
+        word-wrap: break-word;
+    }
+
+    .chat-message-self {
+        margin-left: auto;
+        background: #007bff;
+        color: #fff;
+        border-top-right-radius: 0;
+    }
+
+    .chat-message-other {
+        margin-right: auto;
+        background: #e9ecef;
+        color: #333;
+        border-top-left-radius: 0;
+    }
+
+    /* Avatar */
+    .chat-avatar {
+        width: 35px;
+        height: 35px;
+        background: #6c757d;
+        color: #fff;
+        font-size: 14px;
+        font-weight: bold;
+        margin-right: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Message Content */
+    .chat-body {
+        flex: 1;
+    }
+
+    .chat-meta {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .chat-text {
+        font-size: 14px;
+        line-height: 1.4;
+        margin: 0;
+    }
+
+    /* Input Area */
+    .chat-input-area {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    .chat-input {
+        flex: 1;
+        border-radius: 20px;
+        padding: 10px 15px;
+        border: 1px solid #ccc;
+        outline: none;
+        transition: border 0.2s;
+    }
+
+    .chat-input:focus {
+        border-color: #007bff;
+    }
+
+    .chat-submit {
+        border-radius: 20px;
+        padding: 10px 20px;
+        font-weight: 500;
+    }
+
+    /* Sticky top header showing same text on left & right */
+    .chat-room-header {
+        position: sticky;
+        /* পুরো পেজে স্টিকি রাখতে চাইলে: position: sticky; top: 0; */
+        top: 0;
+        z-index: 20;
+        display: flex;
+        justify-content: space-between;
+        /* বাম-ডান দুই পাশে */
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #ffffff;
+        border: 1px solid #e6e6e6;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, .04);
+    }
+
+    /* Left & right labels */
+    .chat-room-header-left,
+    .chat-room-header-right {
+        font-weight: 600;
+        color: #374151;
+        font-size: 16px;
+        white-space: nowrap;
+    }
+
+    /* Only this container should scroll */
+    .chat-log-container {
+        height: 480px;
+        /* আপনার আগের height রাখা হয়েছে */
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        background: #f9fafb;
+        /* নরম ব্যাকগ্রাউন্ড */
+        border-radius: 12px;
+        box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Optional: ছোট স্ক্রিনে হেডার টেক্সট সাইজ সামান্য ছোট */
+    @media (max-width: 480px) {
+
+        .chat-room-header-left,
+        .chat-room-header-right {
+            font-size: 14px;
+        }
+    }
+
+    /* Top static header */
+    .chat-user-header {
+        display: flex;
+        justify-content: space-between;
+        /* বাম-ডান */
+        align-items: center;
+        padding: 8px 12px;
+        background: #ffffff;
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        position: sticky;
+        /* চাইলে পুরো কন্টেইনারের ভেতরে স্টিকি রাখতে পারেন */
+        top: 0;
+        z-index: 5;
+    }
+
+    /* Left & right texts */
+    .chat-user-left,
+    .chat-user-right {
+        white-space: nowrap;
+    }
+
+    /* Chat log area - only this will scroll */
+    #chat-log {
+        height: 480px;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f9fafb;
+        border-radius: 10px;
+        box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-section chat-room">
+
+    <div class="chat-user-header" style="background-color: green !important;">
+        <div class="chat-user-left"><strong style="color: white;">{{user_name|title}}</strong></div>
+    </div>
+
+    <!-- Only this section will scroll -->
+    <div id="chat-log" style="background-color: #555;">
+
+        {% if db_messages %}
+        {% for m in db_messages %}
+        <div class="media content-section chat-message {% if m.sender.id == user.id %}chat-message-self{% else %}chat-message-other{% endif %}" id="chat-message-{{m.id}}">
+
+            {% if m.sender.client_user and m.sender.client_user.profile_picture %}
+            <img class="rounded-circle article-img chat-avatar" src="{{ m.sender.client_user.profile_picture.url }}"
+                alt="{{ m.sender.username }}">
+            {% else %}
+            <p class="rounded-circle article-img chat-avatar">{{ m.sender.id }}</p>
+            {% endif %}
+
+
+            <div class="media-body chat-body">
+                <div class="article-metadata chat-meta">
+                    <span class="mr-2 chat-sender" {% if m.sender.id == user.id %}style="color: white;"{% else %}style="color: black;"{% endif %}>{{m.sender.username}}</span>
+                </div>
+
+                <!-- Delete button -->
+                {% if m.sender.id == user.id %}
+                <button class="btn btn-danger btn-sm delete-message" data-message-id="{{ m.id }}">Delete</button>
+                {% endif %}
+
+                <p class="article-content chat-text">{{ m.content }}</p>
+
+                {% if m.type in 'image video audio file' %}
+
+                {% for a in m.attachments.all %}
+                {% if m.type == 'image' %}
+                <img src="{{ a.file.url }}" class="chat-image" alt="{{ a.name }}">
+                {% elif m.type == 'video' %}
+                <video src="{{ a.file.url }}" class="chat-video" controls></video>
+                {% elif m.type == 'audio' %}
+                <audio src="{{ a.file.url }}" class="chat-audio" controls></audio>
+                {% else %}
+                <a href="{{ a.file.url }}" class="chat-file" target="_blank" rel="noopener">
+                    📎 {{ a.name|default:"Download file" }}
+                </a>
+                {% endif %}
+                {% endfor %}
+
+                {% elif m.type == 'offer' %}
+                <div class="offer-card">
+
+                    <div class="offer-title"><strong>{{ m.offer.title }}</strong></div>
+                    <div class="offer-desc">{{ m.offer.description|linebreaksbr }}</div>
+                    <div class="offer-meta">
+                        Amount: {{ m.offer.amount_cents|floatformat:2 }} {{ m.offer.currency }}
+                        · Delivery: {{ m.offer.delivery_days }} day(s)
+                    </div>
+                    <div class="offer-status">Status: {{ m.offer.status }}</div>
+
+
+                    <div class="offer-actions" id="offer-action">
+                        {% if m.sender.id == user.id %}
+                        <a class="btn btn-light btn-sm" href="{% url 'chat_offer_action' room.uuid m.id %}">Cancel</a>
+                        {% else %}
+                        <a class="btn btn-success btn-sm" href="{% url 'chat_offer_action' room.uuid m.id %}">Accept</a>
+                        <a class="btn btn-danger btn-sm" href="{% url 'chat_offer_action' room.uuid m.id %}">Decline</a>
+                        {% endif %}
+                    </div>
+
+
+                </div>
+                {% endif %}
+
+
+            </div>
+
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <script>
+            const myDiv = document.getElementById("chat-log");
+            if (myDiv) myDiv.scrollTop = myDiv.scrollHeight;
+        </script>
+    </div>
+
+    <br />
+
+
+    <!-- Preview area -->
+    <div id="file-preview" class="chat-file-preview"></div>
+
+    <div class="chat-input-area">
+        <input class="form-control chat-input" id="chat-message-input" type="text" placeholder="Type your message..." />
+        <input class="btn btn-primary chat-submit" id="chat-message-submit" type="button" value="Send" />
+
+        <label class="btn btn-secondary" style="margin-left:6px;">
+            Attach
+            <input id="chat-file-input" type="file" hidden />
+        </label>
+
+        <!-- 🎤 Voice record button -->
+        <button id="voice-record-btn" class="btn btn-info" style="margin-left:6px;">
+            🎤 Voice
+        </button>
+
+        <button id="open-offer" class="btn btn-warning" style="margin-left:6px;">Custom Offer</button>
+    </div>
+
+    <!-- Offer Modal -->
+    <div id="offer-modal">
+        <input id="offer-title" class="form-control" placeholder="Title (e.g., Website design)" />
+        <textarea id="offer-desc" class="form-control" placeholder="Description"></textarea>
+        <input id="offer-amount" class="form-control" type="number" placeholder="Amount (e.g., 499.00)" />
+        <input id="offer-currency" class="form-control" value="USD" />
+        <input id="offer-days" class="form-control" type="number" value="7" placeholder="Delivery days" />
+        <button id="offer-send" class="btn btn-success">Send Offer</button>
+        <button id="offer-cancel" class="btn btn-light">Cancel</button>
+    </div>
+
+
+
+
+</div>
+<!-- END original chat body -->
+{% endblock %}
+
+{% block footer_content %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ room.uuid|json_script:"room-uuid" }}
+{{ request.user.username|json_script:"current-user-name" }}
+<script>
+    const roomUUID = JSON.parse(document.getElementById('room-uuid').textContent);
+    const userName = JSON.parse(document.getElementById('current-user-name').textContent);
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const chatSocket = new WebSocket(`${protocol}${window.location.host}/ws/chat/${roomUUID}/`);
+
+    window.CURRENT_USER_USERNAME = userName;
+
+    // console.log("chatSocket: ", chatSocket)
+
+    chatSocket.onmessage = function (e) {
+        let data; try { data = JSON.parse(e.data); } catch { return; }
+        // console.log("data: ", data)
+        const log = document.getElementById('chat-log');
+        if (!log) return;
+
+        const type = data.msg_type || 'text';
+        const sender = data.sender ?? '';
+        const senderId = data.sender_id;
+        const isSelf = String(sender) === String(window.CURRENT_USER_USERNAME);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `media content-section chat-message ${isSelf ? 'chat-message-self' : 'chat-message-other'}`;
+
+        // Handle the deletion event
+
+        if (type === 'delete') {
+            const messageId = data.message_id;
+            const ms_e = document.getElementById(`chat-message-${messageId}`)
+            if (ms_e) {
+                ms_e.remove();
+            }
+            return;
+        }
+
+        // avatar
+        let avatarEl;
+        if (data.sender_profile) {
+            avatarEl = document.createElement('img');
+            avatarEl.className = 'rounded-circle article-img chat-avatar';
+            avatarEl.src = data.sender_profile;
+            avatarEl.alt = String(senderId || '');
+            avatarEl.referrerPolicy = 'no-referrer';
+        } else {
+            avatarEl = document.createElement('p');
+            avatarEl.className = 'rounded-circle article-img chat-avatar';
+            avatarEl.textContent = String(senderId ?? '?');
+        }
+
+        // <div class="media-body chat-body"> ... </div>
+        const body = document.createElement('div'); body.className = 'media-body chat-body';
+        const meta = document.createElement('div'); meta.className = 'article-metadata chat-meta';
+        const nameSpan = document.createElement('span'); nameSpan.className = 'mr-2 chat-sender'; nameSpan.textContent = sender || '';
+        meta.appendChild(nameSpan);
+        body.appendChild(meta);
+
+
+        // <!-- Delete button -->
+        let deleteButton = null;
+        if (isSelf){
+            deleteButton  = document.createElement('button');
+            deleteButton.className = 'btn btn-danger btn-sm delete-message';
+            deleteButton.setAttribute('data-message-id', '{{ m.id }}');
+            deleteButton.textContent = 'Delete';
+        }
+        
+
+        if (type === 'text') {
+            const p = document.createElement('p');
+            p.className = 'article-content chat-text';
+            p.textContent = (data.message || '');
+            body.appendChild(p);
+        } else if (type === 'image' && data.attachment?.url) {
+            const p = document.createElement('p');
+            p.className = 'article-content chat-text';
+            p.textContent = (data.message || '');
+            body.appendChild(p);
+
+            const img = document.createElement('img');
+            img.src = data.attachment.url; img.className = 'chat-image';
+            img.alt = data.attachment.name || 'image';
+            img.loading = 'lazy';
+            body.appendChild(img);
+        } else if (type === 'video' && data.attachment?.url) {
+            const p = document.createElement('p');
+            p.className = 'article-content chat-text';
+            p.textContent = (data.message || '');
+            body.appendChild(p);
+
+            const vid = document.createElement('video');
+            vid.src = data.attachment.url; vid.controls = true; vid.className = 'chat-video';
+            body.appendChild(vid);
+        } else if (type === 'audio' && data.attachment?.url) {
+            const aud = document.createElement('audio');
+            aud.src = data.attachment.url; aud.controls = true; aud.className = 'chat-audio';
+            body.appendChild(aud);
+        } else if (type === 'file' && data.attachment?.url) {
+            const p = document.createElement('p');
+            p.className = 'article-content chat-text';
+            p.textContent = (data.message || '');
+            body.appendChild(p);
+
+            const a = document.createElement('a');
+            a.href = data.attachment.url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'chat-file';
+            a.textContent = data.attachment.name || 'Download file';
+            body.appendChild(a);
+        } else if (type === 'offer' && data.offer) {
+            const card = document.createElement('div');
+            card.className = 'offer-card';
+
+            const amount = (data.offer.amount_cents / 100).toFixed(2) + ' ' + data.offer.currency;
+            card.innerHTML = `
+            <div class="offer-title"><strong>${data.offer.title}</strong></div>
+            <div class="offer-desc">${(data.offer.description || '').replace(/\n/g, '<br/>')}</div>
+            <div class="offer-meta">Amount: ${amount} · Delivery: ${data.offer.delivery_days} day(s)</div>
+            <div class="offer-status">Status: <span data-role="status">${data.offer.status}</span></div>
+            <div class="offer-actions"></div>
+            `;
+
+            const actions = card.querySelector('.offer-actions');
+            const statusSpan = card.querySelector('[data-role="status"]');
+
+            function updateStatus(s) { statusSpan.textContent = s; }
+
+            // Only receiver can accept/decline; sender can cancel
+            const amSender = isSelf;
+            if (data.offer.status === 'sent') {
+                if (!amSender) {
+                    const accept = document.createElement('button'); accept.textContent = 'Accept'; accept.className = 'btn btn-success btn-sm';
+                    const decline = document.createElement('button'); decline.textContent = 'Decline'; decline.className = 'btn btn-danger btn-sm';
+                    actions.appendChild(accept); actions.appendChild(decline);
+
+                    accept.onclick = async () => {
+                        const r = await fetch(`/chat/${roomUUID}/offer/${data.offer.message_id || data.offer.id}/action/`, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'accept' }), credentials: 'same-origin'
+                        });
+                        const j = await r.json(); if (j.ok) updateStatus(j.status);
+                    };
+                    decline.onclick = async () => {
+                        const r = await fetch(`/chat/${roomUUID}/offer/${data.offer.message_id || data.offer.id}/action/`, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'decline' }), credentials: 'same-origin'
+                        });
+                        const j = await r.json(); if (j.ok) updateStatus(j.status);
+                    };
+                } else {
+                    const cancel = document.createElement('button'); cancel.textContent = 'Cancel'; cancel.className = 'btn btn-light btn-sm';
+                    actions.appendChild(cancel);
+                    cancel.onclick = async () => {
+                        const r = await fetch(`/chat/${roomUUID}/offer/${data.offer.message_id || data.offer.id}/action/`, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ action: 'cancel' }), credentials: 'same-origin'
+                        });
+                        const j = await r.json(); if (j.ok) updateStatus(j.status);
+                    };
+                }
+            }
+
+            body.appendChild(card);
+        }
+
+        wrapper.appendChild(avatarEl);
+        if (deleteButton) wrapper.appendChild(deleteButton);
+        wrapper.appendChild(body);
+        log.appendChild(wrapper);
+        log.scrollTop = log.scrollHeight;
+    };
+
+    chatSocket.onclose = function (e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    function sendWS(payload) {
+        chatSocket.send(JSON.stringify(payload));
+    }
+    
+    function getCookie(name) {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? match[2] : '';
+    }
+
+
+    // Handle delete button click
+    document.querySelectorAll('.delete-message').forEach(button => {
+        button.addEventListener('click', async function () {
+            const messageId = this.getAttribute('data-message-id');
+
+            // Confirm the deletion
+            if (!confirm('Are you sure you want to delete this message?')) {
+                return;
+            }
+
+            // Send DELETE request to the backend
+            const response = await fetch(`/chat/message/${messageId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),  // Ensure CSRF protection
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.ok) {
+                sendWS({ type: data.type, message_id: data.message_id, username: userName, roomUUID });
+            } else {
+                alert('Error deleting message');
+            }
+        });
+    });
+
+    // Offer Modal - Open/Close functionality
+    document.getElementById('open-offer').onclick = function () {
+        document.getElementById('offer-modal').style.display = 'block';  // Show the modal
+    };
+
+    document.getElementById('offer-cancel').onclick = function () {
+        document.getElementById('offer-modal').style.display = 'none';   // Close the modal
+    };
+
+    document.getElementById('offer-send').onclick = async function () {
+        const title = document.getElementById('offer-title').value.trim();
+        const description = document.getElementById('offer-desc').value.trim();
+        const amount = parseFloat(document.getElementById('offer-amount').value || '0');
+        const currency = document.getElementById('offer-currency').value.trim() || 'USD';
+        const delivery_days = parseInt(document.getElementById('offer-days').value || '7');
+
+        const offerData = {
+            title,
+            description,
+            amount_cents: Math.round(amount * 100),  // Store amount in cents
+            currency,
+            delivery_days
+        };
+
+        // Send offer data to the server
+        const res = await fetch(`/chat/${roomUUID}/offer/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')  // Ensure CSRF protection
+            },
+            body: JSON.stringify(offerData),
+            credentials: 'same-origin'
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+            // Successfully sent offer, now you can broadcast it
+            sendWS({ type: data.type, message: data.message, offer: data.offer, username: userName, roomUUID });
+            document.getElementById('offer-modal').style.display = 'none';  // Close the modal after sending
+        } else {
+            console.error('Offer creation failed:', data);
+            // (optional) alert('Offer creation failed');
+        }
+    };
+
+
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const voiceBtn = document.getElementById('voice-record-btn');
+    voiceBtn.addEventListener('click', async () => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            // Start recording
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const file = new File([blob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+
+                    // Put it in your existing "pendingFiles" queue
+                    pendingFiles.push(file);
+                    renderPreview(); // reuse your preview UI
+                };
+
+                mediaRecorder.start();
+                voiceBtn.classList.add('recording');
+                voiceBtn.textContent = '⏹ Stop';
+            } catch (err) {
+                console.error('Microphone error:', err);
+                alert('Microphone access denied or unavailable');
+            }
+        } else {
+            // Stop recording
+            mediaRecorder.stop();
+            voiceBtn.classList.remove('recording');
+            voiceBtn.textContent = '🎤 Voice';
+        }
+    });
+
+    // --- 1) queue the selected file (no preview shown) ---
+    let pendingFiles = [];
+    const fileInput = document.getElementById('chat-file-input');
+    const previewContainer = document.getElementById('file-preview');
+
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files || []);
+        pendingFiles = files;
+        renderPreview();
+    });
+
+    function renderPreview() {
+        previewContainer.innerHTML = ''; // clear old previews
+
+        pendingFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'chat-file-preview-item';
+
+            // Show image/video preview, or just icon/text
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                item.appendChild(img);
+            } else if (file.type.startsWith('video/')) {
+                const vid = document.createElement('video');
+                vid.src = URL.createObjectURL(file);
+                vid.muted = true;
+                vid.playsInline = true;
+                item.appendChild(vid);
+            } else if (file.type.startsWith('audio/')) {
+                item.textContent = '🎵';
+            } else {
+                item.textContent = '📎';
+            }
+
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'chat-file-preview-remove';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                pendingFiles.splice(index, 1);
+                renderPreview();
+            };
+            item.appendChild(removeBtn);
+
+            previewContainer.appendChild(item);
+        });
+    }
+
+    document.getElementById('chat-message-submit').onclick = async function () {
+        const input = document.getElementById('chat-message-input');
+        const message = (input.value || '').trim();
+
+        if (pendingFiles.length > 0) {
+            for (const file of pendingFiles) {
+                const form = new FormData();
+                form.append('file', file);
+                if (message) {
+                    form.append('message', message);
+                }
+
+                try {
+                    const res = await fetch(`/chat/${roomUUID}/upload/`, {
+                        method: 'POST',
+                        body: form,
+                        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                        credentials: 'same-origin'
+                    });
+                    const data = await res.json();
+
+                    if (data?.ok) {
+                        sendWS({
+                            type: data.type,
+                            message: data.message,
+                            attachment: data.attachment,
+                            username: userName,
+                            roomUUID
+                        });
+                        input.value = '';
+                    } else {
+                        console.error('Upload failed:', data);
+                        // (optional) alert('Upload failed');
+                    }
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    // (optional) alert('Upload error');
+                }
+            }
+            pendingFiles = [];
+            renderPreview();
+            fileInput.value = '';
+        } else if (message) {
+            sendWS({ type: 'text', message, username: userName, roomUUID });
+            input.value = '';
+        }
+
+    };
+
+    // (optional) also allow pressing Enter to send text (your existing handler)
+    document.getElementById('chat-message-input').onkeyup = function (e) {
+        if (e.keyCode === 13) document.getElementById('chat-message-submit').click();
+    };
+
+</script>
+{% endblock %}

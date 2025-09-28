@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Login · Live Chat{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-sm-10 col-md-7 col-lg-5">
+    <div class="card card-soft p-4">
+      <h2 class="fw-bold text-center mb-3">Login</h2>
+      <p class="text-center text-secondary mb-4">Welcome back!</p>
+
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Username or Email</label>
+          <input type="text" name="username" class="form-control" required placeholder="johndoe" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" required placeholder="••••••••" />
+        </div>
+        <button class="btn btn-brand w-100" type="submit">Login</button>
+      </form>
+
+      <p class="text-center mt-3 mb-0">
+        New here? <a href="{% url 'register' %}">Create an account</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
