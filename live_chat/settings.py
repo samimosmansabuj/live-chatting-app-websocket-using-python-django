@@ -1,7 +1,7 @@
 from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv
+load_dotenv()
 
 import os
 
@@ -117,7 +117,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / "static"     # collectstatic এখানে কপি করবে
-STATICFILES_DIRS = [BASE_DIR / "static"]   # যদি প্রজেক্টে /static/ থাকে
+STATICFILES_DIRS = [BASE_DIR / "staticfiles"]   # যদি প্রজেক্টে /static/ থাকে
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', default=os.path.join(BASE_DIR, 'media'))
