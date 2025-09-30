@@ -5,15 +5,14 @@ import subprocess
 port = int(os.getenv("default_port", "10000"))
 app  = "live_chat.asgi:application"  # Path to your ASGI application
 
-if __name__ == "__main__":
-    # Create the arguments for Daphne
+
+def main():
     args = [
-        "daphne",           # The Daphne command itself
-        f"--port={port}",   # Daphne expects `--port` flag
-        app                 # The ASGI application path
+        "daphne",
+        f"--port={port}",
+        app
     ]
-
-    print("Running command:", ' '.join(args))  # Optional for debugging
-
-    # Run the Daphne server with subprocess
     subprocess.run(args)
+
+if __name__ == '__main__':
+    main()
