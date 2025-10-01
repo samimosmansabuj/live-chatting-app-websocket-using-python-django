@@ -32,7 +32,11 @@
               <div class="avatar">{{ user.username|first|upper }}</div>
               <div>
                 <div class="fw-semibold">{{ user.username|title }}</div>
+                {% if user.is_staff %}
+                <div class="text-secondary small">Admin</div>
+                {% else %}
                 <div class="text-secondary small">Member</div>
+                {% endif %}
               </div>
             </div>
             <div class="d-flex gap-2">
