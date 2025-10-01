@@ -1,5 +1,6 @@
 import os
 import subprocess
+from django.core.asgi import get_asgi_application
 
 # Fetch the port from environment variable or use 10000 by default
 port = int(os.getenv("default_port", "10000"))
@@ -15,4 +16,5 @@ def main():
     subprocess.run(args)
 
 if __name__ == '__main__':
+    # print(get_asgi_application())
     main()
